@@ -1,7 +1,7 @@
 Package: opGMMassessment
 Type: Package
 Title: Optimized Automated Gaussian Mixture Assessment
-Version: 0.2.0
+Version: 0.2.1
 Author: Jorn Lotsch [aut,cre] (<https://orcid.org/0000-0002-5818-6958>), 
   Sebastian Malkusch [aut] (<https://orcid.org/0000-0001-6766-140X>) 
 Maintainer: Jorn Lotsch <j.lotsch@em.uni-frankfurt.de>
@@ -15,6 +15,6 @@ Imports: AdaptGauss, DataVisualizations, DistributionOptimization,
         rlang, ggplot2, parallel, caTools, dplyr, mclust, mixAK,
         multimode, NbClust, ClusterR, doParallel
 NeedsCompilation: no
-Packaged: 2021-10-28 10:09:04 UTC; joern
+Packaged: 2021-11-01 07:31:58 UTC; joern
 Repository: CRAN
-Date/Publication: 2021-10-28 10:30:02 UTC
+Date/Publication: 2021-11-01 15:00:02 UTC

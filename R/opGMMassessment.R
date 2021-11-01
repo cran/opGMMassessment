@@ -32,11 +32,11 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
   if (!hasArg("Data")) {
     stop("opGMMassessment: No data.")
   }
-  if (length(Data) < 2) {
-    stop("opGMMassessment: Too few data.")
-  }
   if (DIM(Data) != 1 | is.numeric(Data) == FALSE) {
     stop("opGMMassessment: Data must be a one-dimensional numerical vector.")
+  }
+  if (length(Data) < 2) {
+    stop("opGMMassessment: Too few data.")
   }
   list.of.FitAlgs <- c("ClusterRGMM", "densityMclust", "DO", "MCMC", "normalmixEM")
   if (!FitAlg %in% list.of.FitAlgs) {
@@ -46,11 +46,11 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
   if (!Criterion %in% list.of.Criteria) {
     stop("opGMMassessment: Criterion not implemented. Use AIC, BIC, FM, GAP, LR, NbClust, or SI.")
   }
-
   if (hasArg("MaxModes")) {
-    if (MaxModes == 1)
-      MaxModes <- 2
-    warning("opGMMInnerInterDistances: MaxModes set to 2.", call. = FALSE)
+    if (MaxModes < 1) {
+      MaxModes <- 8
+      warning("opGMMassessment: MaxModes was < 1 and has been set to the default of 8.", call. = FALSE)
+    }
   }
 
   # Create main variables
@@ -193,7 +193,7 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
   # Start of GMM fit code For reasons of computing speed, three separate
   # versions are available, i.e., for Windows, Linux, and for single-core
   # processing.
-  if (var(GMMdata) > 0) {
+  if (var(GMMdata) > 0 & MaxModes > 1) {
     nProc <- min(num_workers - 1, MaxModes, MaxCores)
     if (nProc > 1) {
       switch(Sys.info()[["sysname"]], Windows = {
@@ -202,252 +202,252 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
         x <- integer()
         switch(FitAlg, ClusterRGMM = {
           GMMfit <- lapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(ClusterR::GMM(data = data.frame(GMMdata),
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(ClusterR::GMM(data = data.frame(GMMdata),
             gaussian_comps = list.of.Modes[x], dist_mode = "eucl_dist"),
             TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
             GMMfit_Mode$weights)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           })
         }, densityMclust = {
           GMMfit <- foreach::foreach(x = list.of.Modes) %dopar% {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(mclust::densityMclust(data = GMMdata, G = x),
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(mclust::densityMclust(data = GMMdata, G = x),
             TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            res <- GMMfit_Mode$parameters
-            Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
+            if (class(GMMfit_Mode) != "try-error") {
+              res <- GMMfit_Mode$parameters
+              Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
             unname(res$pro))
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }
         }, DO = {
           GMMfit <- foreach::foreach(x = list.of.Modes) %dopar% {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(DistributionOptimization::DistributionOptimization(Data = GMMdata,
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(DistributionOptimization::DistributionOptimization(Data = GMMdata,
             Modes = list.of.Modes[x], Monitor = 0, CrossoverRate = 0.9,
             ErrorMethod = "chisquare", Seed = ActualSeed), TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }
         }, MCMC = {
           GMMfit <- foreach::foreach(x = list.of.Modes) %dopar% {
-          set.seed(ActualSeed)
-          NewSeed <- ActualSeed + 1e+05
-          set.seed(ActualSeed)
-          FitError <- TRUE
-          FitRetriesCount <- 0
-          while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-            Prior <- list(priorK = "fixed", Kmax = x)
-            nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
-            GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
+            set.seed(ActualSeed)
+            NewSeed <- ActualSeed + 1e+05
+            set.seed(ActualSeed)
+            FitError <- TRUE
+            FitRetriesCount <- 0
+            while (FitError == TRUE & FitRetriesCount < MaxRetries) {
+              Prior <- list(priorK = "fixed", Kmax = x)
+              nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
+              GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
             nMCMC = nMCMC), TRUE)
-            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-            FitRetriesCount <- FitRetriesCount + 1
-            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
-          }
-          if (class(GMMfit_Mode) != "try-error") {
-            MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
+              if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+              FitRetriesCount <- FitRetriesCount + 1
+              if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+            }
+            if (class(GMMfit_Mode) != "try-error") {
+              MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
             GMMfit_Mode[[1]]$scale$shift
-            SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale^2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
-            WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
+              SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale ^ 2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
+              WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
             1) * GMMfit_Mode[[1]]$prior$Kmax, by = GMMfit_Mode[[1]]$prior$Kmax) +
             c(1:x)]
-            Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          set.seed(ActualSeed)
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            set.seed(ActualSeed)
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }
         }, normalmixEM = {
           GMMfit <- foreach::foreach(x = list.of.Modes) %dopar% {
-          set.seed(ActualSeed)
-          NewSeed <- ActualSeed + 1e+05
-          set.seed(ActualSeed)
-          FitError <- TRUE
-          FitRetriesCount <- 0
-          while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-            GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
+            set.seed(ActualSeed)
+            NewSeed <- ActualSeed + 1e+05
+            set.seed(ActualSeed)
+            FitError <- TRUE
+            FitRetriesCount <- 0
+            while (FitError == TRUE & FitRetriesCount < MaxRetries) {
+              GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
             x)$centers, ECM = TRUE, maxrestarts = 1e+05), TRUE)
-            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-            FitRetriesCount <- FitRetriesCount + 1
-            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
-          }
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
-              ]))
-            Mixtures[3] <- 1
+              if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+              FitRetriesCount <- FitRetriesCount + 1
+              if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          set.seed(ActualSeed)
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              ]))
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
+            }
+            set.seed(ActualSeed)
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }
         })
         doParallel::stopImplicitCluster()
       }, {
         switch(FitAlg, ClusterRGMM = {
           GMMfit <- lapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(ClusterR::GMM(data = data.frame(GMMdata),
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(ClusterR::GMM(data = data.frame(GMMdata),
             gaussian_comps = list.of.Modes[x], dist_mode = "eucl_dist"),
             TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
             GMMfit_Mode$weights)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           })
         }, densityMclust = {
           GMMfit <- parallel::mclapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(mclust::densityMclust(data = GMMdata, G = x),
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(mclust::densityMclust(data = GMMdata, G = x),
             TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            res <- GMMfit_Mode$parameters
-            Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
+            if (class(GMMfit_Mode) != "try-error") {
+              res <- GMMfit_Mode$parameters
+              Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
             unname(res$pro))
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }, mc.cores = nProc)
         }, DO = {
           GMMfit <- parallel::mclapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          GMMfit_Mode <- try(DistributionOptimization::DistributionOptimization(Data = GMMdata,
+            set.seed(ActualSeed)
+            GMMfit_Mode <- try(DistributionOptimization::DistributionOptimization(Data = GMMdata,
             Modes = list.of.Modes[x], Monitor = 0, CrossoverRate = 0.9,
             ErrorMethod = "chisquare", Seed = ActualSeed), TRUE)
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }, mc.cores = nProc)
         }, MCMC = {
           GMMfit <- parallel::mclapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          NewSeed <- ActualSeed + 1e+05
-          set.seed(ActualSeed)
-          FitError <- TRUE
-          FitRetriesCount <- 0
-          while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-            Prior <- list(priorK = "fixed", Kmax = x)
-            nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
-            GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
+            set.seed(ActualSeed)
+            NewSeed <- ActualSeed + 1e+05
+            set.seed(ActualSeed)
+            FitError <- TRUE
+            FitRetriesCount <- 0
+            while (FitError == TRUE & FitRetriesCount < MaxRetries) {
+              Prior <- list(priorK = "fixed", Kmax = x)
+              nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
+              GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
             nMCMC = nMCMC), TRUE)
-            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-            FitRetriesCount <- FitRetriesCount + 1
-            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
-          }
-          if (class(GMMfit_Mode) != "try-error") {
-            MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
+              if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+              FitRetriesCount <- FitRetriesCount + 1
+              if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+            }
+            if (class(GMMfit_Mode) != "try-error") {
+              MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
             GMMfit_Mode[[1]]$scale$shift
-            SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale^2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
-            WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
+              SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale ^ 2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
+              WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
             1) * GMMfit_Mode[[1]]$prior$Kmax, by = GMMfit_Mode[[1]]$prior$Kmax) +
             c(1:x)]
-            Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
               ]))
-            Mixtures[3] <- 1
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          set.seed(ActualSeed)
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            set.seed(ActualSeed)
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }, mc.cores = nProc)
         }, normalmixEM = {
           GMMfit <- parallel::mclapply(list.of.Modes, function(x) {
-          set.seed(ActualSeed)
-          NewSeed <- ActualSeed + 1e+05
-          set.seed(ActualSeed)
-          FitError <- TRUE
-          FitRetriesCount <- 0
-          while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-            GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
+            set.seed(ActualSeed)
+            NewSeed <- ActualSeed + 1e+05
+            set.seed(ActualSeed)
+            FitError <- TRUE
+            FitRetriesCount <- 0
+            while (FitError == TRUE & FitRetriesCount < MaxRetries) {
+              GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
             x)$centers, ECM = TRUE, maxrestarts = 1e+05), TRUE)
-            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-            FitRetriesCount <- FitRetriesCount + 1
-            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
-          }
-          if (class(GMMfit_Mode) != "try-error") {
-            Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
-            if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
-              ]))
-            Mixtures[3] <- 1
+              if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+              FitRetriesCount <- FitRetriesCount + 1
+              if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
             }
-          } else {
-            GMMfit_Mode <- vector(mode = "list", length = 9)
-            Mixtures <- Mixtures1
-          }
-          set.seed(ActualSeed)
-          return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
+            if (class(GMMfit_Mode) != "try-error") {
+              Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
+              if (x == 1) {
+                Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+              ]))
+                Mixtures[3] <- 1
+              }
+            } else {
+              GMMfit_Mode <- vector(mode = "list", length = 9)
+              Mixtures <- Mixtures1
+            }
+            set.seed(ActualSeed)
+            return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
           }, mc.cores = nProc)
         })
       })
@@ -458,16 +458,16 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
           GMMfit_Mode <- try(ClusterR::GMM(data = data.frame(GMMdata), gaussian_comps = list.of.Modes[x],
           dist_mode = "eucl_dist"), TRUE)
           if (class(GMMfit_Mode) != "try-error") {
-          Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
+            Mixtures <- cbind(GMMfit_Mode$centroids, sqrt(GMMfit_Mode$covariance_matrices),
             GMMfit_Mode$weights)
-          if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            if (x == 1) {
+              Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
             ]))
-            Mixtures[3] <- 1
-          }
+              Mixtures[3] <- 1
+            }
           } else {
-          GMMfit_Mode <- vector(mode = "list", length = 9)
-          Mixtures <- Mixtures1
+            GMMfit_Mode <- vector(mode = "list", length = 9)
+            Mixtures <- Mixtures1
           }
           return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
         })
@@ -477,17 +477,17 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
           GMMfit_Mode <- try(mclust::densityMclust(data = GMMdata, G = x),
           TRUE)
           if (class(GMMfit_Mode) != "try-error") {
-          res <- GMMfit_Mode$parameters
-          Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
+            res <- GMMfit_Mode$parameters
+            Mixtures <- cbind(unname(res$mean), sqrt(unname(res$variance$sigmasq)),
             unname(res$pro))
-          if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            if (x == 1) {
+              Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
             ]))
-            Mixtures[3] <- 1
-          }
+              Mixtures[3] <- 1
+            }
           } else {
-          GMMfit_Mode <- vector(mode = "list", length = 9)
-          Mixtures <- Mixtures1
+            GMMfit_Mode <- vector(mode = "list", length = 9)
+            Mixtures <- Mixtures1
           }
           return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
         })
@@ -498,15 +498,15 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
           Modes = list.of.Modes[x], Monitor = 0, CrossoverRate = 0.9, ErrorMethod = "chisquare",
           Seed = ActualSeed), TRUE)
           if (class(GMMfit_Mode) != "try-error") {
-          Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
-          if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            Mixtures <- cbind(GMMfit_Mode$Means, GMMfit_Mode$SDs, GMMfit_Mode$Weights)
+            if (x == 1) {
+              Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
             ]))
-            Mixtures[3] <- 1
-          }
+              Mixtures[3] <- 1
+            }
           } else {
-          GMMfit_Mode <- vector(mode = "list", length = 9)
-          Mixtures <- Mixtures1
+            GMMfit_Mode <- vector(mode = "list", length = 9)
+            Mixtures <- Mixtures1
           }
           return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
         })
@@ -518,30 +518,30 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
           FitError <- TRUE
           FitRetriesCount <- 0
           while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-          Prior <- list(priorK = "fixed", Kmax = x)
-          nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
-          GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
+            Prior <- list(priorK = "fixed", Kmax = x)
+            nMCMC <- c(burn = 5000, keep = 10000, thin = 5, info = 1000)
+            GMMfit_Mode <- try(mixAK::NMixMCMC(y0 = GMMdata, prior = Prior,
             nMCMC = nMCMC), TRUE)
-          if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-          FitRetriesCount <- FitRetriesCount + 1
-          if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+            FitRetriesCount <- FitRetriesCount + 1
+            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
           }
           if (class(GMMfit_Mode) != "try-error") {
-          MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
+            MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
             GMMfit_Mode[[1]]$scale$shift
-          SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale^2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
-          WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
+            SDsMCMC <- sqrt(GMMfit_Mode[[1]]$scale$scale ^ 2 * as.numeric(GMMfit_Mode[[1]]$poster.mean.Sigma))
+            WeightsMCMC <- GMMfit_Mode[[1]]$poster.mean.w[seq(0, (GMMfit_Mode[[1]]$nx_w -
             1) * GMMfit_Mode[[1]]$prior$Kmax, by = GMMfit_Mode[[1]]$prior$Kmax) +
             c(1:x)]
-          Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
-          if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            Mixtures <- cbind(MeansMCMC, SDsMCMC, WeightsMCMC)
+            if (x == 1) {
+              Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
             ]))
-            Mixtures[3] <- 1
-          }
+              Mixtures[3] <- 1
+            }
           } else {
-          GMMfit_Mode <- vector(mode = "list", length = 9)
-          Mixtures <- Mixtures1
+            GMMfit_Mode <- vector(mode = "list", length = 9)
+            Mixtures <- Mixtures1
           }
           set.seed(ActualSeed)
           return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
@@ -554,22 +554,22 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
           FitError <- TRUE
           FitRetriesCount <- 0
           while (FitError == TRUE & FitRetriesCount < MaxRetries) {
-          GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
+            GMMfit_Mode <- try(mixtools::normalmixEM(GMMdata, mu = kmeans(GMMdata,
             x)$centers, ECM = TRUE, maxrestarts = 1e+05), TRUE)
-          if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
-          FitRetriesCount <- FitRetriesCount + 1
-          if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+            if (class(GMMfit_Mode) != "try-error") FitError <- FALSE
+            FitRetriesCount <- FitRetriesCount + 1
+            if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
           }
           if (class(GMMfit_Mode) != "try-error") {
-          Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
-          if (x == 1) {
-            Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
+            Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)
+            if (x == 1) {
+              Mixtures <- t(as.matrix(Mixtures[which.max(Mixtures[, 3]),
             ]))
-            Mixtures[3] <- 1
-          }
+              Mixtures[3] <- 1
+            }
           } else {
-          GMMfit_Mode <- vector(mode = "list", length = 9)
-          Mixtures <- Mixtures1
+            GMMfit_Mode <- vector(mode = "list", length = 9)
+            Mixtures <- Mixtures1
           }
           set.seed(ActualSeed)
           return(list(GMMfit_Mode = GMMfit_Mode, Mixtures = Mixtures))
