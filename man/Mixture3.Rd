@@ -2,9 +2,9 @@
 \alias{Mixture3}
 
 \docType{data}
-\title{Example data of olfactory subtest performance.}
+\title{Example Gaussian mixture data.}
 
-\description{Data set containing 1000 instances ditributed according to a Gaussian mixture with m = [-10, 0, 10], s = [1, 2, 3], w = [0.07, 0.05, 0.88].}
+\description{Data set containing 1000 instances distributed according to a Gaussian mixture with m = [-10, 0, 10], s = [1, 2, 3], w = [0.07, 0.05, 0.88].}
 
 \usage{data("Mixture3")}
 

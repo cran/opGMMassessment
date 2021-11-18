@@ -8,12 +8,12 @@ CreateGMM <- function(Means, SDs, Weights, n = 1000, ExactN = FALSE) {
   if (!hasArg("Means") | !hasArg("SDs") | !hasArg("Weights")) {
     stop("CreateGMM: Incomplete parameters.")
   }
-  if (length(c(Means, SDs, Weights)) %% 3 != 0) {
+  if (length(c(Means, SDs, Weights))%%3 != 0) {
     stop("CreateGMM: Unequal number of modes in parameters.")
   }
   sumWeights <- sum(Weights)
   if (sumWeights != 1) {
-    Weights <- Weights / sumWeights
+    Weights <- Weights/sumWeights
   }
 
   if (ExactN == TRUE) {

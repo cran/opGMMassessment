@@ -25,11 +25,11 @@ GMMplotGG(Data, Means, SDs, Weights, BayesBoundaries,
  \item{p1}{the plot of Gaussian mixtures.}
  }
 \references{
- Lotsch, J. (2021): 
- EDOtrans -- an R Package for Euclidean distance-optimized data transformation.
+ Lotsch, J., Malkusch S. (2021):
+ opGMMassessment -- an R Package for automated Guassian mixture modeling.
 }
 \author{
-  Jorn Lotsch and Alfred Ultsch
+  Jorn Lotsch and Sebastian Malkusch
 }
 \examples{
 ## example 1
@@ -37,12 +37,11 @@ data(iris)
 Means0 <- tapply(X = as.vector(iris[,3]), INDEX =  as.integer(iris$Species), FUN = mean)
 SDs0 <- tapply(X = as.vector(iris[,3]), INDEX =  as.integer(iris$Species), FUN = sd)
 Weights0 <- c(1/3, 1/3, 1/3)
-GMM.Sepal.Length <- GMMplotGG(Data = as.vector(iris[,1]), 
+GMM.Sepal.Length <- GMMplotGG(Data = as.vector(iris[3]), 
 	Means = Means0, 
 	SDs = SDs0, 
 	Weights = Weights0, 
 	Hist = TRUE) 
 }
-\keyword{EDOtrans}
 \keyword{GMMplotGG}
 \keyword{data visualization}
