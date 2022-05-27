@@ -61,7 +61,7 @@ PerformGMMfit <- function(FitAlg, GMMdata, Modes, Mixtures1, ActualSeed, MaxRetr
         TRUE)
       if (!is(GMMfit_Mode, "try-error")) FitError <- FALSE
       FitRetriesCount <- FitRetriesCount + 1
-      if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+      if (is(GMMfit_Mode, "try-error")) set.seed(NewSeed + FitRetriesCount)
     }
     if (!is(GMMfit_Mode, "try-error")) {
       MeansMCMC <- GMMfit_Mode[[1]]$poster.mean.mu * GMMfit_Mode[[1]]$scale$scale +
@@ -89,7 +89,7 @@ PerformGMMfit <- function(FitAlg, GMMdata, Modes, Mixtures1, ActualSeed, MaxRetr
         Modes)$centers, ECM = TRUE, maxrestarts = 1e+05), TRUE)
       if (!is(GMMfit_Mode, "try-error")) FitError <- FALSE
       FitRetriesCount <- FitRetriesCount + 1
-      if (class(GMMfit_Mode) == "try-error") set.seed(NewSeed + FitRetriesCount)
+      if (is(GMMfit_Mode, "try-error")) set.seed(NewSeed + FitRetriesCount)
     }
     if (!is(GMMfit_Mode, "try-error")) {
       Mixtures <- cbind(GMMfit_Mode$mu, GMMfit_Mode$sigma, GMMfit_Mode$lambda)

@@ -83,7 +83,7 @@ DetermineBestGMM <- function(GMMdata, GMMfit, Criterion, ActualSeed, MaxModes, B
 
   idBestGMM_NbClust <- function(GMMdata, MaxModes) {
     NBres <- suppressWarnings(NbClust::NbClust(GMMdata, method = "kmeans", distance = "euclidean",
-      max.nc = MaxModes))
+      max.nc = MaxModes), classes = "warning")
     BestGMM <- length(unique(NBres$Best.partition))
     return(BestGMM)
   }
