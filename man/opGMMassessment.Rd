@@ -35,8 +35,9 @@ MaxModes = 8, MaxCores = getOption("mc.cores", 2L), PlotIt = FALSE, KS = TRUE, S
  \item{KS}{Results of the Kolmogorov-Smirnov test.}
  }
 \references{
- Lotsch, J., Malksuch S. (2021):
- opGMMassessment -- an R Package for automated Gaussian mixture modeling.
+ Lotsch J, Malkusch S, Ultsch A. Comparative assessment of automated algorithms for the separation of one-dimensional Gaussian mixtures.
+Informatics in Medicine Unlocked,  Volume 34, 2022, https://doi.org/10.1016/j.imu.2022.101113.
+(https://www.sciencedirect.com/science/article/pii/S2352914822002507)
 }
 \author{
   Jorn Lotsch and Sebastian Malkusch

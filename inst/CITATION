@@ -1,0 +1,19 @@
+citHeader("To cite opGMMassessment in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title = "Comparative assessment of automated algorithms for the separation of one-dimensional Gaussian mixtures",
+  journal = "Informatics in Medicine Unlocked",
+  volume = "34",
+  pages = "101113",
+  year = "2022",
+  issn = "2352-9148",
+  doi = "10.1016/j.imu.2022.101113",
+  url = "https://www.sciencedirect.com/science/article/pii/S2352914822002507",
+  author = "Jörn Lötsch and Sebastian Malkusch and Alfred Ultsch",
+  textVersion = paste("Jörn Lötsch, Sebastian Malkusch, Alfred Ultsch.",
+    "Comparative assessment of automated algorithms for the separation of one-dimensional Gaussian mixtures.",
+    "Informatics in Medicine Unlocked,  Volume 34, 2022",
+    "https://doi.org/10.1016/j.imu.2022.101113",
+    "https://www.sciencedirect.com/science/article/pi/S2352914822002507)")
+)
