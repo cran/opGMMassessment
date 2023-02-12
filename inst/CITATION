@@ -1,7 +1,4 @@
-citHeader("To cite opGMMassessment in publications use:")
-
-citEntry(
-  entry    = "Article",
+bibentry(bibtype    = "Article",
   title = "Comparative assessment of automated algorithms for the separation of one-dimensional Gaussian mixtures",
   journal = "Informatics in Medicine Unlocked",
   volume = "34",

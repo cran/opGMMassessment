@@ -133,7 +133,7 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
     Boundaries <- AdaptGauss::BayesDecisionBoundaries(Means = Means, SDs = SDs,
       Weights = Weights)
     if (is.integer0(Boundaries) == FALSE) {
-      Boundaries <- Boundaries[Boundaries >= min(Means) & Boundaries <= max(Means)]
+      Boundaries <- Boundaries #[Boundaries >= min(Means) & Boundaries <= max(Means)]
     }
     if (length(Boundaries) > 0) {
       ClassesB <- cutGMM(x = GMMdata, breaks = Boundaries)
