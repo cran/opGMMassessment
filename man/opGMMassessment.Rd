@@ -10,8 +10,8 @@ opGMMassessment(Data, FitAlg = "MCMC", Criterion = "LR",
 MaxModes = 8, MaxCores = getOption("mc.cores", 2L), PlotIt = FALSE, KS = TRUE, Seed)
 }
 \arguments{
- \item{Data}{the data as a vector.}
-  \item{FitAlg}{which fit algorithm to use: "ClusterRGMM" = GMM from ClusterR, 
+ \item{Data}{the data as a numerical vector (1D).}
+  \item{FitAlg}{which fit algorithm to use: "ClusterRGMM" = GMM from ClusterR,
   "densityMclust" from mclust,
   "DO" from DistributionOptimization (slow),
   "MCMC" = NMixMCMC from mixAK, or
@@ -46,7 +46,7 @@ Informatics in Medicine Unlocked,  Volume 34, 2022, https://doi.org/10.1016/j.im
 ## example 1
 data(iris)
 opGMMassessment(Data = iris$Petal.Length,
-  FitAlg = "normalmixEM", 
+  FitAlg = "normalmixEM",
   Criterion = "BIC",
   PlotIt = TRUE,
   MaxModes = 5,

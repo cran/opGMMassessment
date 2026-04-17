@@ -1,4 +1,4 @@
-6bd1362302b56fd3ae94bb8c2cdaa588 *DESCRIPTION
+6a30ac24b233b9c7a9f08484b7ce265b *DESCRIPTION
 c3406d89a12e5a9e1de76b6cac341373 *NAMESPACE
 d6a67fa4d5997bae0a151e028042a05a *R/CreateGMM.R
 216d961a5463c7dddc9e1e36c11af95d *R/DetermineBestGMM.R
@@ -6,12 +6,11 @@ d6a67fa4d5997bae0a151e028042a05a *R/CreateGMM.R
 e1bc1a5828b5883d6f09ea136311871c *R/PerformGMMfit.R
 faa270bf670c29c9037e3752c365912d *R/clusGapP.R
 7809ad76f8d7defcc99c24ee442e89df *R/cutGMM.R
-3b06306e6008d6e0b24222124f224207 *R/opGMMassessment.R
-386ac51d45b6224069557b4e87dec271 *README.md
+70eff2cc524f134b9c5f8ebc06ae7b43 *R/opGMMassessment.R
 36758fe121cf7da8d52155241e0fe605 *data/Chromatogram.rda
 87862e9114ae66adcc11d6c1db4f7093 *data/Mixture3.rda
-0d511b61029ecbfe6df25ebfde98ea2d *inst/CITATION
+e20f11b0aff86d431076477eb23d1eaf *inst/CITATION
 626cb237c480369957a0fbc0d9cd134c *man/Chromatogram.Rd
 b7ce771b1c3898cb53e4205e27cc1cf1 *man/GMMplotGG.Rd
 5ef85c2372fbe0faa96c853ce2ed3002 *man/Mixture3.Rd
-40ea0a05a1e6e5dac4ff37580f01f692 *man/opGMMassessment.Rd
+282faa1eab8b4cef64014be90d062b05 *man/opGMMassessment.Rd

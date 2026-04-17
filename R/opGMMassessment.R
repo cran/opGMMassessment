@@ -1,6 +1,6 @@
 # Analysis of a Gaussian mixture structure in one-dimensional numerical data.
 # Statistical justification with likelihood ratio and other tests.
-#' @useDynLib(opGMMassessment, .registration = TRUE)
+#' @useDynLib opGMMassessment, .registration = TRUE
 #' @importFrom ClusterR GMM
 #' @importFrom mclust densityMclust
 #' @importFrom mixtools normalmixEM
@@ -16,7 +16,7 @@
 opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 8,
                             MaxCores = getOption("mc.cores", 2L), PlotIt = FALSE, KS = TRUE, Seed) {
 
-  # Check input
+  # Check data input
   DIM <- function(...) {
     args <- list(...)
     unlist(lapply(args, function(x) {
@@ -27,15 +27,30 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
     }))
   }
 
-  if (!hasArg("Data")) {
-    stop("opGMMassessment: No data.")
-  }
+  if (missing(Data)) stop("opGMMassessment: No data provided. Stopping.")
+  if (length(Data) == 0) stop("opGMMassessment: Data is empty.")
   if (DIM(Data) != 1 || is.numeric(Data) == FALSE) {
     stop("opGMMassessment: Data must be a one-dimensional numerical vector.")
   }
   if (length(Data) < 2) {
     stop("opGMMassessment: Too few data.")
   }
+  if (is.factor(Data)) Data <- as.character(Data)
+  if (is.numeric(Data)) {
+    Data <- as.numeric(Data)
+  } else if (is.integer(Data)) {
+    Data <- as.numeric(Data)
+  } else if (is.character(Data) || is.factor(Data)) {
+    x <- as.character(Data)
+    ok <- !is.na(suppressWarnings(as.numeric(x))) | is.na(x)
+    if (!all(ok)) stop("opGMMassessment: Data must be numeric or coercible to numeric.")
+    Data <- as.numeric(x)
+  } else {
+    stop("opGMMassessment: Data must be numeric or coercible to numeric.")
+  }
+  if (all(is.na(Data))) stop("opGMMassessment: Data contains only NA values.")
+
+  # Check other input
   list.of.FitAlgs <- c("ClusterRGMM", "densityMclust", "DO", "MCMC", "normalmixEM")
   if (!FitAlg %in% list.of.FitAlgs) {
     stop("opGMMassessment: Fit algorithm not implemented. Use ClusterRGMM, DO, densityMclust or normalmixEM")
@@ -134,14 +149,14 @@ opGMMassessment <- function(Data, FitAlg = "MCMC", Criterion = "LR", MaxModes = 
     }
   }
 
-  Classes <- rep(NA, length(DataOrigLength))
+  Classes <- rep(NA, DataOrigLength)
   Classes[DataOrignoNA] <- ClassesB
 
   # Perform Kolmogorov-Smirnov test
   if (KS == TRUE) {
     set.seed(ActualSeed)
     Pred <- CreateGMM(Means = Means, SDs = SDs, Weights = Weights, n = 1000)$Data
-    KStest <- suppressWarnings(stats::ks.test(x = GMMdata, y = Pred), classes = "warning")
+    KStest <- suppressWarnings(stats::ks.test(x = GMMdata, y = Pred))
   } else {
     KStest <- NA
   }
